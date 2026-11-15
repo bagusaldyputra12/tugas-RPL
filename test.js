@@ -11,3 +11,5 @@ files.forEach(file => {
 });
 
 console.log('SUKSES: Semua file utama aplikasi valid dan siap dirilis!');
+
+console.log("Menjalankan tes tambahan...");
