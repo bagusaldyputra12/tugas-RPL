@@ -1,25 +1,15 @@
 # Sistem Pelaporan Kerusakan Fasilitas Alfamidi
 
-
 Aplikasi web (HTML, CSS, JavaScript) untuk melaporkan dan mengelola kerusakan fasilitas gerai Alfamidi. Repositori ini dilengkapi pipeline **Continuous Integration (CI)** dengan GitHub Actions yang menguji setiap perubahan secara otomatis.
 
 Tugas Team-Based Project (TBP) – Rekayasa Perangkat Lunak, Pertemuan 13 & 14 (Pemeliharaan Perangkat Lunak & DevOps).
 
-## Struktur Singkat
+## Menjalankan di komputer lokal
 
-| Berkas | Fungsi |
-| --- | --- |
-| `index.html`, `style.css`, `script.js` | Berkas utama aplikasi |
-| `test.js` | Automated test: memastikan berkas utama aplikasi tersedia |
-| `package.json` | Perintah proyek (`npm test` menjalankan `node test.js`) |
-| `.github/workflows/ci.yml` | Workflow CI GitHub Actions |
-
-## 1. Siapkan: Jalankan Test Secara Lokal
-
-Prasyarat: **Node.js 20.x** dan npm.
+Prasyarat: Node.js 20+ (workflow CI memakai 20.x).
 
 ```bash
-npm install   # memasang dependensi (proyek ini tidak memiliki dependensi eksternal)
+npm install   # install dependensi (proyek ini tidak punya dependensi runtime)
 npm test      # menjalankan node test.js
 ```
 
@@ -29,59 +19,49 @@ Hasil yang diharapkan:
 SUKSES: Semua file utama aplikasi valid dan siap dirilis!
 ```
 
-## 2. Otomasikan: Workflow CI
+Proyek ini aplikasi statis, jadi tidak ada langkah build dan lint (`npm run build` dan `npm run lint` dilewati dengan `--if-present`). Untuk membuka aplikasi, buka `index.html` di browser.
 
-Workflow disimpan di `.github/workflows/ci.yml`. Tahapan CI yang dijalankan runner:
+## Melihat hasil run
 
-1. **Trigger**: event `push` / `pull_request`
-2. **Checkout repository**: `actions/checkout`
-3. **Setup Node.js 20.x**: `actions/setup-node`
-4. **Install dependensi**: `npm install` (atau `npm ci`)
-5. **Automated test**: `npm test`
+1. Buka tab **Actions** pada repository GitHub.
+2. Pilih workflow **CI**, lalu klik salah satu run.
+3. Centang hijau = semua langkah lulus; silang merah = ada langkah gagal (klik langkah untuk melihat log).
 
-Job `test` berjalan pada runner `ubuntu-latest`. Jika salah satu langkah gagal, pipeline berhenti dan commit ditandai gagal.
+## Struktur proyek
 
-## 3. Buktikan: Pengetesan CI Berhasil dan Gagal
-
-Dua versi `ci.yml` dipakai untuk membuktikan CI. Keduanya menjalankan perintah yang sama (`npm test`), perbedaannya ada pada cara install dependensi.
-
-### A. CI Berhasil
-
-```yaml
-name: CI Pipeline
-
-on:
-  push:
-    branches: { main }
-  pull_request:
-    branches: { main }
-  workflow_dispatch:
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Run Automated Test
-        run: npm test
+```
+.github/workflows/ci.yml          Workflow GitHub Actions
+index.html, style.css, script.js  Aplikasi (UI dan logika)
+test.js                           Automated test (memeriksa berkas utama aplikasi)
+package.json                      Script npm (npm test)
+alfamidi-vector-logo-seeklogo/    Aset logo
+README.md                         Dokumentasi tugas TBP
 ```
 
-Penjelasan:
-- Berjalan pada `push` dan `pull_request` ke branch `main`, serta manual lewat `workflow_dispatch` (tombol *Run workflow* di tab Actions).
-- Memakai `npm install`, yang tidak membutuhkan `package-lock.json`, sehingga langkah install selalu lolos.
-- Langkah *Run Automated Test* menjalankan `npm test` dan mencetak `SUKSES: Semua file utama aplikasi valid dan siap dirilis!`.
+## Dokumentasi tugas
 
-### B. CI Gagal
+- Laporan TBP (ringkasan error, langkah perbaikan, pembagian peran): _[tempel tautan laporan]_
+- Run gagal dan run sukses: lihat bagian **3. Buktikan** di bawah.
+
+---
+
+## 1. Siapkan
+
+Repository proyek berisi aplikasi web pelaporan kerusakan fasilitas gerai. Agar perintah test dapat berjalan secara lokal dan di CI, dipastikan:
+
+- `package.json` memiliki script `test` yang menjalankan `node test.js`.
+- `test.js` memeriksa bahwa `index.html`, `style.css`, dan `script.js` tersedia. Jika ada yang hilang, test keluar dengan exit code 1 sehingga CI gagal.
+- Tidak ada dependensi tambahan, sehingga install hanya membutuhkan Node.js.
+
+Bukti perintah berjalan lokal: `npm install && npm test` → `SUKSES: Semua file utama aplikasi valid dan siap dirilis!` (exit code 0).
+
+## 2. Otomasikan
+
+Workflow `.github/workflows/ci.yml` berjalan pada **push** dan **pull request**, dengan langkah: checkout → setup Node.js 20.x → install dependensi → build/lint (jika ada) → `npm test`.
+
+Dua versi workflow dipakai untuk membuktikan CI.
+
+**Versi gagal** (`npm ci` tanpa `package-lock.json`):
 
 ```yaml
 name: CI
@@ -113,45 +93,83 @@ jobs:
         run: npm test
 ```
 
-Penyebab kegagalan:
-- Repositori tidak memiliki `package-lock.json`, padahal `npm ci` mewajibkannya (diuji lokal: `npm ci` berhenti dengan `npm error code EUSAGE`). Opsi `cache: 'npm'` pada `setup-node` juga membutuhkan lockfile.
-- Akibatnya pipeline berhenti di langkah **Install dependensi** dan langkah Build, Lint, dan Test tidak sempat berjalan.
+**Versi berhasil** (`npm install`):
 
-### C. Perbaikan
+```yaml
+name: CI Pipeline
 
-Ganti isi `ci.yml` dengan versi **CI Berhasil** (memakai `npm install`). Alternatif lain: buat lockfile dengan `npm install --package-lock-only`, lalu commit `package-lock.json` agar `npm ci` bisa berjalan.
+on:
+  push:
+    branches: { main }
+  pull_request:
+    branches: { main }
+  workflow_dispatch:
 
-## Cara Menjalankan dan Melihat Hasil CI
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-1. Simpan workflow sebagai `.github/workflows/ci.yml`, lalu push:
-   ```bash
-   git add .
-   git commit -m "pesan perubahan"
-   git push origin main
-   ```
-2. Buka tab **Actions** di repositori: <https://github.com/bagusaldyputra12/tugas-RPL/actions>
-3. Pilih run terbaru, lalu lihat status tiap langkah (centang hijau = sukses, tanda silang merah = gagal).
-4. Jika gagal: baca log langkah yang berhenti, perbaiki, jalankan `npm test` di lokal, lalu push ulang.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
 
-## Menganalisis Pipeline Gagal
+      - name: Install Dependencies
+        run: npm install
 
-| Jenis kegagalan | Yang diperiksa |
-| --- | --- |
-| Install gagal | Keberadaan `package-lock.json`, versi Node, registry, konfigurasi dependensi |
-| Test gagal | Pesan error dari `test.js` (misalnya `ERROR: File style.css tidak ditemukan!`) dan perubahan yang memicunya |
-| Permission gagal | Izin workflow, environment, dan secret |
+      - name: Run Automated Test
+        run: npm test
+```
 
-## Bukti Run CI
+## 3. Buktikan
 
-| Run | Workflow | Hasil | Bukti |
+| Run | Workflow | Hasil | Keterangan |
 | --- | --- | --- | --- |
-| 1 | CI (versi gagal, `npm ci`) | Gagal di langkah Install dependensi | _(tempel screenshot / URL run)_ |
-| 2 | CI Pipeline (versi berhasil, `npm install`) | Berhasil | _(tempel screenshot / URL run)_ |
+| #1 | CI (`npm ci`, `cache: 'npm'`) | Gagal | Berhenti di langkah Install dependensi: tidak ada `package-lock.json` |
+| #2 | CI Pipeline (`npm install`) | Sukses | Install dan `npm test` lulus |
 
-## Tim dan Pembagian Peran
+Tautan/screenshot run (isi setelah push):
 
-| Nama | Peran |
-| --- | --- |
-| _(isi nama anggota)_ | _(mis. penulis workflow CI)_ |
-| _(isi nama anggota)_ | _(mis. penulis test dan dokumentasi)_ |
-| _(isi nama anggota)_ | _(mis. .......)_ |
+- Run gagal: _[tempel URL run #1]_
+- Run sukses: _[tempel URL run #2]_
+
+## 4. Ringkasan error dan langkah perbaikan
+
+**Gejala.** Langkah *Install dependensi* gagal dengan pesan:
+
+```
+npm error code EUSAGE
+npm error
+npm error The `npm ci` command can only install with an existing package-lock.json or
+npm error npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or
+npm error later to generate a package-lock.json file, then try again.
+```
+
+**Penyebab.** Workflow memakai `npm ci`, yang mewajibkan `package-lock.json`, padahal berkas itu tidak ada di repository. Opsi `cache: 'npm'` pada `setup-node` juga membutuhkan lockfile.
+
+**Dampak.** Pipeline berhenti di langkah install, sehingga Build, Lint, dan Test tidak dijalankan dan commit ditandai gagal.
+
+**Perbaikan.**
+
+1. Baca log langkah yang gagal di tab Actions dan temukan pesan `EUSAGE`.
+2. Jalankan `npm ci` di lokal untuk mereproduksi masalah (hasilnya sama).
+3. Ganti `ci.yml` dengan versi berhasil yang memakai `npm install`. Alternatif: buat lockfile dengan `npm install --package-lock-only` lalu commit `package-lock.json`.
+4. Jalankan `npm test` di lokal (lulus), commit, dan push.
+5. Pastikan run berikutnya di GitHub Actions berwarna hijau.
+
+**Klasifikasi pemeliharaan.** *Corrective maintenance* (memperbaiki kesalahan yang teridentifikasi). `test.js` tetap menjadi test regresi: jika berkas utama hilang, CI gagal dengan pesan `ERROR: File <nama> tidak ditemukan!`.
+
+## 5. Pembagian peran
+
+| Anggota | NIM | Peran | Tugas |
+| --- | --- | --- | --- |
+| Bagus Aldy Putra | F5512510009 | Ketua / DevOps | Menulis workflow CI, mengelola repository dan push |
+| Orlicon Yaleswira Widodo | F5512510004 | Developer | Memperbaiki workflow yang gagal, memelihara `test.js` dan `package.json` |
+| Gracia Marselina | F5512510024 | QA / Dokumentasi | Menjalankan dan mendokumentasikan run gagal dan sukses, menulis README dan laporan |
+
+## 6. Kesimpulan
+
+Pipeline CI otomatis memeriksa setiap perubahan, sehingga masalah pada langkah install terdeteksi sejak push pertama, bukan setelah digabung ke `main`. Alurnya sesuai prinsip perubahan terkendali: catat isu, analisis akar masalah, perbaiki, uji, dan catat hasil.
