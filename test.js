@@ -6,7 +6,7 @@ const files = ['index.html', 'style.css', 'script.js'];
 files.forEach(file => {
   if (!fs.existsSync(file)) {
     console.error(`ERROR: File ${file} tidak ditemukan!`);
-    process. // Gagalkan tes jika file hilang
+    process.exit(1); // Gagalkan tes jika file hilang
   }
 });
 
