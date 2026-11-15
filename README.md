@@ -1,5 +1,6 @@
 # Sistem Pelaporan Kerusakan Fasilitas Alfamidi
 
+
 Aplikasi web (HTML, CSS, JavaScript) untuk melaporkan dan mengelola kerusakan fasilitas gerai Alfamidi. Repositori ini dilengkapi pipeline **Continuous Integration (CI)** dengan GitHub Actions yang menguji setiap perubahan secara otomatis.
 
 Tugas Team-Based Project (TBP) – Rekayasa Perangkat Lunak, Pertemuan 13 & 14 (Pemeliharaan Perangkat Lunak & DevOps).
